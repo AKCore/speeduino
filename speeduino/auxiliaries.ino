@@ -45,6 +45,41 @@ void fanControl()
   }
 }
 
+
+void initialiseNitrous()
+{
+  if( configPage10.nitrousInv == 1 ) { nitrousHIGH = LOW; nitrousLOW = HIGH; }
+  else { nitrousHIGH = HIGH; nitrousLOW = LOW; }
+  digitalWrite(pinNitrousOuput, nitrousLOW);         //Initiallise program with the nitrous Solenoid in the off state
+  currentStatus.nitrousActive = false;
+
+  nitrous_pin_port = portOutputRegister(digitalPinToPort(pinNitrousOuput));
+  nitrous_pin_mask = digitalPinToBitMask(pinNitrousOuput);
+
+}
+
+void nitrousControl()
+{
+  if( configPage10.nitrousEnable == 1 )
+  {
+
+    if ( (currentStatus.RPM > ((unsigned int)(configPage10.nitrousRPMEnable) * 100)) && (currentStatus.TPS >= configPage10.nitrousTPSEnable) &&(currentStatus.O2 > configPage10.nitrousAFRLow) && (currentStatus.O2 < configPage10.nitrousAFRHigh))
+    {
+      //Nitrous needs to be turned on. Checked for normal or inverted nitrous signal
+      if( configPage10.nitrousInv == 0 ) { NITROUS_PIN_HIGH(); }
+      else { NITROUS_PIN_LOW(); }
+      currentStatus.nitrousActive = true;
+    }
+    else 
+    {
+      //Nitrous needs to be turned off. Checked for normal or inverted nitrous signal
+      if( configPage10.nitrousInv == 0 ) { NITROUS_PIN_LOW(); } 
+      else { NITROUS_PIN_HIGH(); }
+      currentStatus.nitrousActive = false;
+    }
+  }
+}
+
 void initialiseAuxPWM()
 {
   #if defined(CORE_AVR)
@@ -76,6 +111,7 @@ void initialiseAuxPWM()
   vvt_pin_port = portOutputRegister(digitalPinToPort(pinVVT_1));
   vvt_pin_mask = digitalPinToBitMask(pinVVT_1);
 
+  
   #if defined(CORE_STM32) || defined(CORE_TEENSY) //2uS resolution Min 8Hz, Max 5KHz
     boost_pwm_max_count = 1000000L / (2 * configPage6.boostFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle. The x2 is there because the frequency is stored at half value (in a byte) to allow freqneucies up to 511Hz
     vvt_pwm_max_count = 1000000L / (2 * configPage6.vvtFreq * 2); //Converts the frequency in Hz to the number of ticks (at 2uS) it takes to complete 1 cycle

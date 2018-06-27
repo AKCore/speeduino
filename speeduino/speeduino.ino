@@ -93,6 +93,8 @@ static byte coilHIGH = HIGH;
 static byte coilLOW = LOW;
 static byte fanHIGH = HIGH;             // Used to invert the cooling fan output
 static byte fanLOW = LOW;               // Used to invert the cooling fan output
+static byte nitrousHIGH = HIGH;         // Used to invert the nitrous output
+static byte nitrousLOW = LOW;           // Used to invert the nitrous output
 
 volatile uint16_t mainLoopCount;
 byte deltaToothCount = 0; //The last tooth that was used with the deltaV calc
@@ -270,6 +272,7 @@ void setup()
   //initialiseDisplay();
   initialiseIdle();
   initialiseFan();
+  initialiseNitrous();
   initialiseAuxPWM();
   initialiseCorrections();
   initialiseADC();
@@ -1005,6 +1008,10 @@ void loop()
 #endif
        vvtControl();
        idleControl(); //Perform any idle related actions. Even at higher frequencies, running 4x per second is sufficient.
+      if (configPage10.nitrousEnable == 1)
+      {
+         nitrousControl();
+      }
     } //4Hz timer
     if (BIT_CHECK(LOOP_TIMER, BIT_TIMER_1HZ)) //Once per second)
     {

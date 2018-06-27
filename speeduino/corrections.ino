@@ -76,6 +76,9 @@ static inline byte correctionsFuel()
   currentStatus.launchCorrection = correctionLaunch();
   if (currentStatus.launchCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.launchCorrection); activeCorrections++; }
 
+currentStatus.nitrousActive = correctionNitrous();
+  if (currentStatus.nitrousCorrection != 100) { sumCorrections = (sumCorrections * currentStatus.nitrousCorrection); activeCorrections++; }
+
   bitWrite(currentStatus.status1, BIT_STATUS1_DFCO, correctionDFCO());
   if ( bitRead(currentStatus.status1, BIT_STATUS1_DFCO) == 1 ) { sumCorrections = 0; }
 
@@ -276,6 +279,20 @@ static inline byte correctionLaunch()
   return launchValue;
 }
 
+
+/*
+Nitrous has a setting to increase the fuel load to assist in keeping appropriate AFRs
+This simple check applies the extra fuel if the nitrous output is active
+*/
+static inline byte correctionNitrous()
+{
+  byte nitrousValue = 100;
+  if(currentStatus.nitrousActive ) { nitrousValue = (100 + configPage10.nitrousFuel); }
+
+  return nitrousValue;
+}
+
+
 /*
  * Returns true if decelleration fuel cutoff should be on, false if its off
  */
@@ -395,7 +412,8 @@ int8_t correctionsIgn(int8_t base_advance)
   advance = correctionSoftRevLimit(advance);
   advance = correctionSoftLaunch(advance);
   advance = correctionSoftFlatShift(advance);
-
+  advance = correctionNitrousRetard(advance); 
+  
   //Fixed timing check must go last
   advance = correctionFixedTiming(advance);
   advance = correctionCrankingFixedTiming(advance); //This overrrides the regular fixed timing, must come last
@@ -480,6 +498,29 @@ static inline int8_t correctionSoftFlatShift(int8_t  advance)
   else { BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_FLATSS); }
 
   return ignSoftFlatValue;
+}
+
+//All nitrous Logic goes in here. 
+static inline int8_t correctionNitrousRetard(int8_t advance)
+{
+  byte ignNitrousRetard = advance;
+  byte AFRValue = 100;
+  
+  //Nitrous Activation.
+      //Is enabled                        RPM is Higher than the enable RPM                                           TPS is greater than or equal to the Enable Thresh         o2 is higher than the low range                      o2 is lower than the high range
+  if (configPage10.nitrousEnable && (currentStatus.RPM > ((unsigned int)(configPage10.nitrousRPMEnable) * 100)) && (currentStatus.TPS >= configPage10.nitrousTPSEnable) &&(currentStatus.O2 > configPage10.nitrousAFRLow) && (currentStatus.O2 < configPage10.nitrousAFRHigh))
+  {
+    currentStatus.nitrousActive = true;
+    BIT_SET(currentStatus.spark2, BIT_SPARK2_NITROUS);
+    ignNitrousRetard = configPage10.nitrousRetard;
+  }
+  else
+  {
+    currentStatus.nitrousActive = false;
+    BIT_CLEAR(currentStatus.spark2, BIT_SPARK2_NITROUS);
+  }
+
+  return ignNitrousRetard;
 }
 
 //******************************** DWELL CORRECTIONS ********************************

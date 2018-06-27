@@ -101,7 +101,7 @@
 
 #define BIT_SPARK2_FLATSH         0 //Flat shift hard cut
 #define BIT_SPARK2_FLATSS         1 //Flat shift soft cut
-#define BIT_SPARK2_UNUSED3        2
+#define BIT_SPARK2_NITROUS        2 //Nitrous Active
 #define BIT_SPARK2_UNUSED4        3
 #define BIT_SPARK2_UNUSED5        4
 #define BIT_SPARK2_UNUSED6        5
@@ -331,6 +331,7 @@ struct statuses {
   byte launchCorrection; //The amount of correction being applied if launch control is active
   byte flexCorrection; //Amount of correction being applied to compensate for ethanol content
   byte flexIgnCorrection; //Amount of additional advance being applied based on flex
+  byte nitrousCorrection; //The amount of nitrous fuel adjustment currently being applied
   byte afrTarget;
   byte idleDuty;
   bool idleUpActive;
@@ -372,6 +373,7 @@ struct statuses {
   byte nChannels; //Number of fuel and ignition channels
   int16_t fuelLoad;
   int16_t ignLoad;
+  bool nitrousActive;
 
   //Helpful bitwise operations:
   //Useful reference: http://playground.arduino.cc/Code/BitMath
@@ -729,8 +731,18 @@ struct config10 {
   uint8_t flexAdvBins[6];
   uint8_t flexAdvAdj[6];    //Additional advance (in degrees) @ current ethanol (typically 0 @ 0%, 10-20 @ 100%)
                             //And another three corn rows die.
-
-  byte unused11_75_191[117];
+  
+  //Nitrous Control
+  byte   nitrousEnable; //Nitrous Enabled
+  int8_t nitrousRetard; //Nitrous Retard Amount
+  byte   nitrousFuel; //Nitrous Fuel Adder
+  byte   nitrousAFRHigh; //When over this amount nitrous gets deactivated
+  byte   nitrousAFRLow; //When lower than this amount nitrous gets deactivated
+  byte   nitrousRPMEnable; //Minimum RPM to activate nitrous
+  byte   nitrousTPSEnable; //Minimum TPS% to activate nitrous
+  byte   nitrousPin;       //Nitrous Output Pin
+  byte   nitrousInv;       // Nitrous Output inversion
+  byte unused11_75_191[108];
 
 #if defined(CORE_AVR)
   };
@@ -799,6 +811,7 @@ byte pinIgnBypass; //The pin used for an ignition bypass (Optional)
 byte pinFlex; //Pin with the flex sensor attached
 byte pinBaro; //Pin that an external barometric pressure sensor is attached to (If used)
 byte pinResetControl; // Output pin used control resetting the Arduino
+byte pinNitrousOuput; // Output pin for activating nitrous solenoid no default;
 
 // global variables // from speeduino.ino
 extern struct statuses currentStatus; // from speeduino.ino

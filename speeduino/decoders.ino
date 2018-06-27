@@ -1710,7 +1710,7 @@ int getCrankAngle_Miata9905(int timePerDegree)
       crankAngle = toothAngles[(tempToothCurrentCount - 1)] + configPage4.triggerAngle; //Perform a lookup of the fixed toothAngles array to find what the angle of the last tooth passed was.
 
       //Estimate the number of degrees travelled since the last tooth}
-      crankAngle += timeToAngle(elapsedTime);
+      //crankAngle += timeToAngle(elapsedTime);
 
       if (crankAngle >= 720) { crankAngle -= 720; }
       if (crankAngle > CRANK_ANGLE_MAX) { crankAngle -= CRANK_ANGLE_MAX; }
